@@ -10,8 +10,8 @@ scripts, with variables either in the environment or in a YAML
 file being used to choose which deployment scripts to run and
 also to pass parameters to the deployment scripts. Variables
 defined in the YAML file (if any) take precedence over variables
-from the environment. Dashes (-) in variables in the YAML file
-will be converted to underscores (_) in the environment.
+from the environment. Dashes (`-`) in variables in the YAML file
+will be converted to underscores (`_`) in the environment.
 
 Example of usage:
 
