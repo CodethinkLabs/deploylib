@@ -81,9 +81,9 @@ class SimpleNetworkConfigurationExtension(object):
 
         if os.path.isfile(file_path):
             try:
-                os.rename(file_path, file_path + ".morph")
+                os.rename(file_path, file_path + ".default")
                 self.status(msg="Renaming networkd file from systemd chunk: \
-                            %(f)s to %(f)s.morph", f=file_path)
+                            %(f)s to %(f)s.default", f=file_path)
             except OSError:
                 pass
 
