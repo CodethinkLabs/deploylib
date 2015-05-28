@@ -21,5 +21,5 @@ Example of usage:
     root_tree: /src/my-system-tree/
     EOF
 
-    script_type="check" deploylib-driver tarball-deployment.yaml
-    script_type="write" deploylib-driver tarball-deployment.yaml
+    script_type="check" run-deploylib tarball-deployment.yaml
+    script_type="write" run-deploylib tarball-deployment.yaml
