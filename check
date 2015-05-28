@@ -1,0 +1,65 @@
+#!/bin/sh
+# Copyright (C) 2015  Codethink Limited
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+cleanup() {
+    rm -rf "$deploy_location"
+    if [ "$1" == "full" ]; then
+        rm -rf "$root_tree"
+    fi
+}
+
+deploy() {
+    export deploy_location=`pwd`/tmp/test."$1"
+
+    # run configure extensions
+    script_name='simple-network' script_type='configure' ./run-deploylib $config
+
+    # run check and write extension
+    export script_name="$1"
+    printf "\nDeploying using $script_name\n---------------\n\n"
+    script_type='check' ./run-deploylib $config
+    script_type='write' ./run-deploylib $config
+}
+
+system_tarball="$1"
+root_tree="tmp/test_root_tree"
+config="tmp/test.yaml"
+
+if [ ! -d "tmp" ]; then
+    mkdir -p "tmp"
+fi
+
+cat > $config<<EOF
+UPGRADE: false
+DISK_SIZE: 3G
+root_tree: $root_tree
+EOF
+
+# if the directory to contain the system doesn't exist, create it.
+if [ ! -d "$root_tree" ]; then
+    mkdir -p "$root_tree"
+fi
+
+# extract $system_tarball into $root_tree, to simulate `morph deploy`
+echo "Extracting $system_tarball"
+tar -C "$root_tree" -xf "$system_tarball"
+
+deploy rawdisk
+cleanup
+
+deploy tar
+cleanup full
