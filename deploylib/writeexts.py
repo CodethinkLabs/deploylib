@@ -130,6 +130,8 @@ class WriteExtension(object):
     def run(self, args=None):
         try:
             self.setup_logging()
+            if args is None:
+                args = sys.argv[1:]
             self.run_extension(args)
         except WriteExtensionError as e:
             sys.stderr.write('ERROR: %s' % e.msg)
