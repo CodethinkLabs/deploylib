@@ -1,0 +1,153 @@
+#!/usr/bin/env python
+# Copyright (C) 2015  Codethink Limited
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+'''Command line tool for deploylib.
+
+This tool expects at least the following variables to be passed to it,
+either in a YAML file given as a command line argument or in the
+environment.
+
+* script_name - The name of the script to be run, eg. "tar"
+* script_type - The type of the script to be run, eg. "write"
+* root_tree - The location of the filesystem to be deployed.
+* deploy_location - The location to deploy the filesystem too. See each
+                    script's individual help file for more guidance on
+                    what this should be.
+
+`root_tree` and `deploy_location` will be passed as command line arguments
+to the deployment script, dependent on `script_type` as follows.
+
+* If `script_type` is "configure", then `root_tree` is passed as the command
+  line argument.
+* If `script_type` is "check", then `deploy_location` is passed as the command
+  line argument.
+* If `script_type` is "write", then `root_tree` and `deploy_location are both
+  passed as the command line arguments, in that order.
+
+'''
+
+
+import os
+import subprocess
+import sys
+
+import yaml
+
+import deploylib
+
+
+def parse_config(config_filename):
+    '''Load the YAML config file.'''
+    config = {}
+    with open(config_filename, 'r') as config_file:
+        config = yaml.load(config_file)
+    return config
+
+
+def get_config_value(config, key):
+    '''Get a value either from the given config dict or the environment.
+
+    If `key` exists in the config dict then use that, otherwise fall back
+    to getting it from the environment.
+
+    If `key` doesn't exist in either `config` or the environment, then fail.
+
+    '''
+    try:
+        value = config.get(key)
+        if not value:
+            value = os.environ[key]
+        return value
+    except KeyError:
+        sys.stdout.write('ERROR: "%s" must exist in the environment or the '
+                         'given YAML file, but it does not.\n' % key)
+        sys.exit(1)
+
+
+def find_script(search_paths, script_filename):
+    '''Search for `script_filename`.
+
+    Each tree given in `search_paths` is recursively searched for a file with
+    name matching `script_filename`.
+
+    '''
+    for path in search_paths:
+        for dirpath, dirnames, filenames in os.walk(path):
+            if script_filename in filenames:
+                return os.path.abspath(os.path.join(dirpath, script_filename))
+
+
+def get_script_filename(config):
+    '''Return the absolute path to the script defined in the config.
+
+    The config can be either the YAML file passed to this script or the
+    environment, with the YAML file taking precedence. The script is looked
+    for in deploylib's installation directory first, then in the directories
+    listed in DEPLOYLIB_SCRIPT_SEARCH_PATH in the environment.
+
+    The filename is expected to be of the form:
+
+        $script_name.$script_type
+
+    For example, the following YAML given as a config file will cause this
+    function to look for a script called tar.write.
+
+        script_type: write
+        script_name: tar
+        deploy_location: /home/foo/deployment
+        root_tree: /home/foo/unpacked-tarball
+        UPGRADE: no
+
+    '''
+    script_type = get_config_value(config, 'script_type')
+    script_name = get_config_value(config, 'script_name')
+
+    deploylib_dirname = os.path.dirname(deploylib.__file__)
+    search_paths = os.path.join(deploylib_dirname, 'scripts')
+    search_paths = ':'.join(
+        (search_paths, os.environ.get('DEPLOYLIB_SCRIPT_SEARCH_PATH', '')))
+    search_paths = search_paths.split(':')
+
+    return find_script(search_paths, '.'.join((script_name, script_type)))
+
+
+def populate_environment(config):
+    '''Put the variables from the YAML config file into the environment.'''
+    for key, value in config.iteritems():
+        env_key = key.replace('-', '_')
+        os.environ[env_key] = yaml.dump(value)
+
+
+def run():
+    '''Find and run the correct deployment script.'''
+    config = {}
+    if len(sys.argv) > 1:
+        config = parse_config(sys.argv[1])
+    root_tree = get_config_value(config, 'root_tree')
+    deploy_location = get_config_value(config, 'deploy_location')
+    script_type = get_config_value(config, 'script_type')
+    cmd = [get_script_filename(config)]
+
+    if script_type in ('configure', 'write'):
+        cmd.append(root_tree)
+    if script_type in ('check', 'write'):
+        cmd.append(deploy_location)
+
+    populate_environment(config)
+    subprocess.check_call(cmd, stdout=sys.stdout, stderr=sys.stdout)
+
+
+run()

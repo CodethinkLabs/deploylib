@@ -5,7 +5,7 @@ deploylib
 deployment of filesystem trees to various targets including
 tarballs and OpenStack clouds.
 
-The `deploylib-driver` script is called to run these deployment
+The `run-deploylib` script is called to run these deployment
 scripts, with variables either in the environment or in a YAML
 file being used to choose which deployment scripts to run and
 also to pass parameters to the deployment scripts. Variables
@@ -16,7 +16,7 @@ will be converted to underscores (`_`) in the environment.
 Example of usage:
 
     cat > tarball-deployment.yaml <<EOF
-    deploy_type: tar
+    script_name: tar
     deploy_location: /src/my-tarball.tar
     root_tree: /src/my-system-tree/
     EOF
