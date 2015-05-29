@@ -25,3 +25,12 @@ function to be able to make use of its helper methods.
 
 from deploylib import util
 from deploylib import writeexts
+
+
+class ScriptError(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg

@@ -24,7 +24,7 @@ import deploylib
 class RawdiskCheckExtension(deploylib.writeexts.WriteExtension):
     def run_extension(self, args):
         if len(args) != 1:
-            raise deploylib.writeexts.WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Wrong number of command line args')
 
         self.require_btrfs_in_deployment_host_kernel()
@@ -34,19 +34,19 @@ class RawdiskCheckExtension(deploylib.writeexts.WriteExtension):
         if upgrade:
             if not self.is_device(location):
                 if not os.path.isfile(location):
-                    raise deploylib.writeexts.WriteExtensionError(
+                    raise deploylib.ScriptError(
                         'Cannot upgrade %s: it is not an existing disk image' %
                         location)
 
             version_label = os.environ.get('VERSION_LABEL')
             if version_label is None:
-                raise deploylib.writeexts.WriteExtensionError(
+                raise deploylib.ScriptError(
                     'VERSION_LABEL was not given. It is required when '
                     'upgrading an existing system.')
         else:
             if not self.is_device(location):
                 if os.path.exists(location):
-                    raise deploylib.writeexts.WriteExtensionError(
+                    raise deploylib.ScriptError(
                         'Target %s already exists and UPGRADE is not True.'
                         % location)
 

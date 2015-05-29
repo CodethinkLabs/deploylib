@@ -29,15 +29,6 @@ import time
 import deploylib
 
 
-class WriteExtensionError(Exception):
-
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
 class Fstab(object):
     '''Small helper class for parsing and adding lines to /etc/fstab.'''
 
@@ -133,7 +124,7 @@ class WriteExtension(object):
             if args is None:
                 args = sys.argv[1:]
             self.run_extension(args)
-        except WriteExtensionError as e:
+        except deploylib.ScriptError as e:
             sys.stderr.write('ERROR: %s' % e.msg)
             sys.exit(1)
 
@@ -156,7 +147,7 @@ class WriteExtension(object):
 
     def require_btrfs_in_deployment_host_kernel(self):
         if not self.check_for_btrfs_in_deployment_host_kernel():
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Btrfs is required for this deployment, but was not '
                 'detected in the kernel of the machine that contains '
                 'deploylib.')
@@ -172,7 +163,7 @@ class WriteExtension(object):
     def created_disk_image(self, location):
         size = self.get_disk_size()
         if not size:
-            raise WriteExtensionError('DISK_SIZE is not defined')
+            raise deploylib.ScriptError('DISK_SIZE is not defined')
         self.create_raw_disk_image(location, size)
         try:
             yield
@@ -226,8 +217,8 @@ class WriteExtension(object):
             return None
         bytes = self._parse_size(size)
         if bytes is None:
-            raise WriteExtensionError('Cannot parse %s value %s' %
-                                      (env_var, size))
+            raise deploylib.ScriptError('Cannot parse %s value %s' %
+                                        (env_var, size))
         return bytes
 
     def get_disk_size(self):
@@ -438,8 +429,8 @@ class WriteExtension(object):
         if 'INITRAMFS_PATH' in os.environ:
             initramfs = os.path.join(temp_root, os.environ['INITRAMFS_PATH'])
             if not os.path.exists(initramfs):
-                raise WriteExtensionError('INITRAMFS_PATH specified, '
-                                          'but file does not exist')
+                raise deploylib.ScriptError('INITRAMFS_PATH specified, '
+                                            'but file does not exist')
             return initramfs
         return None
 
@@ -476,7 +467,7 @@ class WriteExtension(object):
             subprocess.check_call(['cp', '-a', try_path, dtb_dest])
         else:
             logging.error("Failed to find device tree %s", device_tree_path)
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Failed to find device tree %s' % device_tree_path)
 
     def get_dtb_path(self):
@@ -508,7 +499,7 @@ class WriteExtension(object):
         if config_type in config_function_dict:
             config_function_dict[config_type](real_root, disk_uuid)
         else:
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Invalid BOOTLOADER_CONFIG_FORMAT %s' % config_type)
 
     def generate_extlinux_config(self, real_root, disk_uuid=None):
@@ -552,7 +543,7 @@ class WriteExtension(object):
         if install_type in install_function_dict:
             install_function_dict[install_type](real_root)
         elif install_type != 'none':
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Invalid BOOTLOADER_INSTALL %s' % install_type)
 
     def install_bootloader_extlinux(self, real_root):
@@ -618,8 +609,8 @@ class WriteExtension(object):
         elif value in ['yes', '1', 'true']:
             return True
         else:
-            raise WriteExtensionError('Unexpected value for %s: %s' %
-                                      (variable, value))
+            raise deploylib.ScriptError('Unexpected value for %s: %s' %
+                                        (variable, value))
 
     def check_ssh_connectivity(self, ssh_host):
         try:
@@ -627,11 +618,11 @@ class WriteExtension(object):
             output = deploylib.util.run_ssh_command(ssh_host, command)
         except subprocess.CalledProcessError as e:
             logging.error("Error checking SSH connectivity: %s", str(e))
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Unable to SSH to %s: %s' % (ssh_host, e))
 
         if output.strip() != 'test':
-            raise WriteExtensionError(
+            raise deploylib.ScriptError(
                 'Unexpected output from remote machine: %s' % output.strip())
 
     def is_device(self, location):
