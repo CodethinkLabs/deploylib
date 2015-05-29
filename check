@@ -37,8 +37,20 @@ deploy() {
     script_type='write' ./run-deploylib $config
 }
 
+setup_install_files() {
+    mkdir -p "$1"/usr/share/
+    cat > "$1"/usr/share/test.txt <<EOF
+hello, world.
+EOF
+    cat > "$1"/manifest <<EOF
+0040755 0 0 /usr/share
+0100644 0 0 /usr/share/test.txt
+EOF
+}
+
 system_tarball="$1"
-root_tree="tmp/test_root_tree"
+install_files_dir="tmp/install-files"
+root_tree="tmp/test-root-tree"
 config="tmp/test.yaml"
 
 if [ ! -d "tmp" ]; then
@@ -51,6 +63,7 @@ DISK_SIZE: 3G
 FSTAB_SRC: LABEL=src /srv/distbuild auto defaults,rw,noatime 0 2
 HOSTS_CONTROLLER: 127.0.0.1 onenode
 HOSTNAME: test-system
+INSTALL_FILES: $install_files_dir/manifest
 root_tree: $root_tree
 EOF
 
@@ -63,6 +76,9 @@ fi
 echo "Extracting $system_tarball"
 tar -C "$root_tree" -xf "$system_tarball"
 
+setup_install_files "$install_files_dir"
+configure install-files
+cat "$root_tree"/usr/share/test.txt
 configure "set-hostname"
 configure simple-network
 configure fstab
