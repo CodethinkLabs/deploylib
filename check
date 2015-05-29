@@ -50,6 +50,7 @@ UPGRADE: false
 DISK_SIZE: 3G
 FSTAB_SRC: LABEL=src /srv/distbuild auto defaults,rw,noatime 0 2
 HOSTS_CONTROLLER: 127.0.0.1 onenode
+HOSTNAME: test-system
 root_tree: $root_tree
 EOF
 
@@ -62,6 +63,7 @@ fi
 echo "Extracting $system_tarball"
 tar -C "$root_tree" -xf "$system_tarball"
 
+configure "set-hostname"
 configure simple-network
 configure fstab
 cat "$root_tree"/etc/fstab
