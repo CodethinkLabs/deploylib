@@ -49,6 +49,7 @@ cat > $config<<EOF
 UPGRADE: false
 DISK_SIZE: 3G
 FSTAB_SRC: LABEL=src /srv/distbuild auto defaults,rw,noatime 0 2
+HOSTS_CONTROLLER: 127.0.0.1 onenode
 root_tree: $root_tree
 EOF
 
@@ -64,6 +65,8 @@ tar -C "$root_tree" -xf "$system_tarball"
 configure simple-network
 configure fstab
 cat "$root_tree"/etc/fstab
+configure hosts
+cat "$root_tree"/etc/hosts
 
 deploy rawdisk
 cleanup
